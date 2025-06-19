@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
-{-# LANGUAGE ParallelListComp #-}
+{-# LANGUAGE ParallelListComp    #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 import           Boid
 import           Control.Exception   (bracket_)
@@ -64,17 +64,17 @@ main = do
     xMin = 0
     yMin = 0
 
-    maxSpeed = 2.0
-    minSpeed = 1.0
+    maxSpeed = 4.0
+    minSpeed = 0.1
 
-    visionDist = 30.0
+    visionDist = 15.0
 
-    cohesionStr = 0.2
+    cohesionStr = 0.005
 
     separationDist = 5.0
-    separationStr = 0.1
+    separationStr = 0.05
 
-    alignmentStr = 1/8
+    alignmentStr = 0.05
 
     nextFrame :: (Int, Int) -> ColoredFrame -> ColoredFrame
     nextFrame s f =
