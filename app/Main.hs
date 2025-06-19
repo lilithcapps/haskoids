@@ -49,6 +49,7 @@ main = do
   let frames = generator (nextFrame (xMax, yMax)) (zip setColorFuncs (take boidCount boids))
 
   C.hideCursor
+  C.enableLineWrap
   bracket_ C.useAlternateScreenBuffer (C.useNormalScreenBuffer >> C.showCursor)
     $ forM_ frames (\bs -> do
       C.clearScreen
