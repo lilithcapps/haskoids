@@ -38,7 +38,7 @@ cabal-version: 3.0
 -- Directories containing source files.
 -- Base language which the package is written in.
 name: haskoids
-version: 0.1.0.0
+version: 1.0.0
 synopsis: Craig Reynolds' "Boids", in Haskell
 license: BSD-3-Clause
 license-file: LICENSE
