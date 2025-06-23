@@ -2,23 +2,26 @@
 {-# LANGUAGE ParallelListComp    #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 import           Boid
-import           Control.Exception   (bracket_)
-import           Control.Monad       (forM_)
-import           Data.Maybe          (fromMaybe)
-import           ReadArgs            (readArgs)
-import qualified System.Console.ANSI as C
-import           System.IO           (hFlush, stdout)
-import qualified System.Random       as R
+import           Control.Concurrent       (threadDelay)
+import           Control.Concurrent.Async
+import           Control.Exception        (bracket_)
+import           Control.Monad            (forM, forM_)
+import           Data.Maybe               (fromMaybe)
+import           ReadArgs                 (readArgs)
+import qualified System.Console.ANSI      as C
+import           System.IO                (hFlush, stdout)
+import qualified System.Random            as R
 
 type ColoredFrame = [(IO (), Boid)]
 type Frame = [Boid]
 
 main :: IO ()
 main = do
-  (count :: Maybe Int) <- readArgs
+  (count :: Maybe Int, maybeFps :: Maybe Int) <- readArgs
   maybeSize <- C.getTerminalSize
   let (yMax, xMax) = fromMaybe (100, 100) maybeSize
   let boidCount = fromMaybe 100 count
+  let fps = fromIntegral $ fromMaybe 60 maybeFps :: Double
   let colors = [C.Black, C.Blue, C.Cyan, C.Green, C.Magenta, C.Red, C.White, C.Yellow]
   let intensities = [C.Vivid, C.Dull]
   gen <- R.getStdGen
@@ -46,20 +49,25 @@ main = do
   let generator :: (a -> a) -> a -> [a]
       generator f s = s : generator f (f s)
 
-  let frames = generator (nextFrame (xMax, yMax)) (zip setColorFuncs (take boidCount boids))
+  let coloredBoids = zip setColorFuncs (take boidCount boids)
+  let frames = generator (nextFrame (xMax, yMax)) coloredBoids
 
   C.hideCursor
   C.enableLineWrap
+  C.setTitle "Haskoids"
   bracket_ C.useAlternateScreenBuffer (C.useNormalScreenBuffer >> C.showCursor)
     $ forM_ frames (\bs -> do
-      C.clearScreen
-      -- print $ map snd f
-      forM_ bs (\(setColor, b) -> do
-        let (col, row) = position b
-        setColor
-        C.setCursorPosition (round row) (round col)
-        putChar '*' >> hFlush stdout
-        )
+      -- C.clearScreen
+      let outs = C.clearScreen >> forM bs (\(setColor, b)
+            ->  let (col, row) = position $! b
+                        in C.setCursorPosition (round row) (round col)
+                        >> setColor
+                        >> putChar '*') >> hFlush stdout
+      let pause = threadDelay $ round $ 1e6 / fps -- N frames per second (1e6 micros) ==>
+                                                 -- 1e6/N seconds / frame for
+                                                 -- time to show each frame
+
+      concurrently pause outs
       )
   where
     xMin = 0
@@ -68,11 +76,11 @@ main = do
     maxSpeed = 4.0
     minSpeed = 0.1
 
-    visionDist = 15.0
+    visionDist = 10.0
 
     cohesionStr = 0.005
 
-    separationDist = 5.0
+    separationDist = 2.0
     separationStr = 0.05
 
     alignmentStr = 0.05
